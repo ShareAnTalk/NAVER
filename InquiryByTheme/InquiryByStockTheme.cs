@@ -260,7 +260,12 @@ partial class InquiryByStockTheme : Form
                     theme.TerminateTheProcess();
                     return;
                 }
+#if DEBUG
+
+#else
                 await ReactTheScenarioAsync();
+#endif
+
             });
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Minimized;
