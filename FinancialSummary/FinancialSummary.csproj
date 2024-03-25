@@ -9,17 +9,11 @@
 		<ApplicationIcon>analytics.ico</ApplicationIcon>
 		<Authors>cyberprophet</Authors>
 		<Company>ShareInvest Corp.</Company>
-		<Copyright>Copyright ⓒ 2023, ShareInvest Corp.</Copyright>
-		<PackageProjectUrl>https://github.com/cyberprophet/NAVER</PackageProjectUrl>
+		<Copyright>Copyright ⓒ 2024, ShareInvest Corp.</Copyright>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<Content Include="analytics.ico" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<PackageReference Include="Selenium.Support" Version="4.18.1" />
-		<PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="123.0.6312.5800" />
 	</ItemGroup>
 
 </Project>
