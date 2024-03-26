@@ -3,18 +3,15 @@ using Newtonsoft.Json.Linq;
 
 using RestSharp;
 
-using ShareInvest;
+using ShareInvest.Utilities;
 
 using System.Net;
 
-const string URL = "https://navercomp.wisereport.co.kr";
-const string RESOURCE = "company/ajax/c1050001_data.aspx?flag=2&cmp_cd={code}&finGubun=MAIN&frq=0";
-
 Queue<string> stock = new();
 
-using (var client = new RestClient(URL))
+using (var client = new RestClient("https://localhost:44301"))
 {
-    var response = await client.ExecuteAsync(new RestRequest(RESOURCE));
+    var response = await client.ExecuteAsync(new RestRequest(""));
 
     if (HttpStatusCode.OK == response.StatusCode && !string.IsNullOrEmpty(response.Content))
     {
@@ -24,7 +21,7 @@ using (var client = new RestClient(URL))
         {
             return;
         }
-        foreach (var item in items.Children())
+        foreach (var item in items.Children().OrderBy(ks => Guid.NewGuid()))
         {
             var code = Convert.ToString(item["code"]);
 
@@ -35,35 +32,28 @@ using (var client = new RestClient(URL))
             stock.Enqueue(code);
         }
     }
-}
-while (stock.TryDequeue(out string? code))
-{
-    if (string.IsNullOrEmpty(code))
+    while (stock.TryDequeue(out string? code))
     {
-        continue;
-    }
-    using (var client = new RestClient(URL))
-    {
-        var response = await client.ExecuteAsync(new RestRequest(RESOURCE));
-
-        if (HttpStatusCode.OK != response.StatusCode || string.IsNullOrEmpty(response.Content))
+        if (string.IsNullOrEmpty(code))
         {
             continue;
         }
-        var data = JToken.Parse(response.Content)["JsonData"];
-
-        if (data == null || !data.HasValues)
+        foreach (var fs in await FinancialSummary.ExecuteAsync(code))
         {
-            continue;
-        }
-        var json = Convert.ToString(data);
+            fs.Code = code;
+            fs.Date = fs.ReceiveDate?[..7].Replace('.', '-');
+            fs.Estimated = fs.ReceiveDate?[^2] == 'E';
 
-        if (string.IsNullOrEmpty(json))
-        {
-            continue;
-        }
-        var e = JsonConvert.DeserializeObject<FinancialStatements[]>(json);
+            response = await client.ExecuteAsync(new RestRequest
+            {
+                Resource = ShareInvest.Parameter.TransformOutbound(fs.GetType().Name),
+                Method = Method.Post
+            }.AddJsonBody(fs));
 
-        Console.WriteLine(JsonConvert.SerializeObject(e, Formatting.Indented));
+            if (response.StatusCode == HttpStatusCode.OK && int.TryParse(response.Content, out int saveChanges) && saveChanges > 0)
+            {
+                Console.WriteLine(JsonConvert.SerializeObject(fs, Formatting.Indented));
+            }
+        }
     }
 }
