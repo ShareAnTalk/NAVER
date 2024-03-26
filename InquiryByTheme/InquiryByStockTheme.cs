@@ -87,7 +87,6 @@ partial class InquiryByStockTheme : Form
 
                             Dispose();
                         }
-                        _ = Task.Run(async () => await ReactTheScenarioAsync());
                     });
                     return;
             }
@@ -111,6 +110,7 @@ partial class InquiryByStockTheme : Form
         };
         timer.Start();
     }
+
     async Task ReactTheScenarioAsync()
     {
         if (Transmission == null)
@@ -202,6 +202,7 @@ partial class InquiryByStockTheme : Form
         }
         simulation.TerminateTheProcess();
     }
+
     void TimerTick(object _, EventArgs e)
     {
         if (FormBorderStyle.Sizable == FormBorderStyle && FormWindowState.Minimized != WindowState)
@@ -260,12 +261,6 @@ partial class InquiryByStockTheme : Form
                     theme.TerminateTheProcess();
                     return;
                 }
-#if DEBUG
-
-#else
-                await ReactTheScenarioAsync();
-#endif
-
             });
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Minimized;
@@ -273,6 +268,7 @@ partial class InquiryByStockTheme : Form
         }
         notifyIcon.Icon = icons[DateTime.Now.Second % 3];
     }
+
     void SecuritiesResize(object _, EventArgs e)
     {
         SuspendLayout();
@@ -283,6 +279,7 @@ partial class InquiryByStockTheme : Form
 
         ResumeLayout();
     }
+
     void JustBeforeFormClosing(object _, FormClosingEventArgs e)
     {
         if (Visible)
@@ -297,6 +294,7 @@ partial class InquiryByStockTheme : Form
         }
         Dispose();
     }
+
     void StripItemClicked(object _, ToolStripItemClickedEventArgs e)
     {
         if (reference.Name!.Equals(e.ClickedItem?.Name))
@@ -309,18 +307,22 @@ partial class InquiryByStockTheme : Form
         }
         Close();
     }
+
     string? ThemeCode
     {
         get; set;
     }
+
     Transmission? Transmission
     {
         get; set;
     }
+
     DialogResult IsCancelled
     {
         get => MessageBox.Show(Resources.WARNING.Replace('|', '\n'), Text, MessageBoxButtons.OKCancel, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
     }
+
     readonly Simulation simulation;
     readonly Theme theme;
     readonly Icon[] icons;
