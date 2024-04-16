@@ -64,10 +64,18 @@ partial class InquiryByStockTheme : Form
                     return;
 
                 case string:
+                    TimeSpan delay = TimeSpan.FromMilliseconds(0x400 * 3);
+
+                    if (MarketOperation.장종료_시간외종료 == Cache.MarketOperation)
+                    {
+                        var now = DateTime.Now;
+
+                        DateTime targetTime = new(now.Year, now.Month, now.Day + 1, 8, Random.Shared.Next(0, 39), Random.Shared.Next(0, 60));
+
+                        delay = targetTime - now;
+                    }
                     _ = BeginInvoke(async () =>
                     {
-                        TimeSpan delay = TimeSpan.FromMilliseconds(0x400 * 3);
-
                         while (Transmission != null && themes.TryDequeue(out StockTheme? theme))
                         {
                             theme.ThemeDetail = details.Where(p => theme.ThemeCode!.Equals(p.ThemeCode));
@@ -81,12 +89,9 @@ partial class InquiryByStockTheme : Form
                                 notifyIcon.Text = $"[{Cache.MarketOperation}] {themes.Count:D4}.{theme.ThemeName}";
                             }
                         }
-                        if (MarketOperation.장종료_시간외종료 != Cache.MarketOperation)
-                        {
-                            await Task.Delay(delay);
+                        await Task.Delay(delay);
 
-                            Dispose();
-                        }
+                        Dispose();
                     });
                     return;
             }
