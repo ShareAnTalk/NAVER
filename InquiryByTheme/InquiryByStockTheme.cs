@@ -9,6 +9,8 @@ using ShareInvest.Entities.TradingView;
 using ShareInvest.Observers;
 using ShareInvest.Properties;
 using ShareInvest.Securities;
+using ShareInvest.Services.AnTalk;
+using ShareInvest.Utilities;
 using ShareInvest.Utilities.TradingView;
 
 using Skender.Stock.Indicators;
@@ -64,13 +66,14 @@ partial class InquiryByStockTheme : Form
                     return;
 
                 case string:
-                    TimeSpan delay = TimeSpan.FromMilliseconds(0x400 * 3);
+                    TimeSpan delay = TimeSpan.FromMinutes(0x400 * 3);
 
                     if (MarketOperation.장종료_시간외종료 == Cache.MarketOperation)
                     {
                         var now = DateTime.Now;
+                        var td = now.Hour > 0x10 ? now.AddDays(1) : now;
 
-                        DateTime targetTime = new(now.Year, now.Month, now.Day + 1, 8, Random.Shared.Next(0, 39), Random.Shared.Next(0, 60));
+                        DateTime targetTime = new(td.Year, td.Month, td.Day, 8, Random.Shared.Next(0, 39), Random.Shared.Next(0, 60));
 
                         delay = targetTime - now;
                     }
@@ -89,6 +92,10 @@ partial class InquiryByStockTheme : Form
                                 notifyIcon.Text = $"[{Cache.MarketOperation}] {themes.Count:D4}.{theme.ThemeName}";
                             }
                         }
+                        await FinancialSummaryAsync(Order.MarketCap);
+
+                        notifyIcon.Text = $"{DateTime.Now.Add(delay):G}";
+
                         await Task.Delay(delay);
 
                         Dispose();
@@ -114,6 +121,31 @@ partial class InquiryByStockTheme : Form
             }
         };
         timer.Start();
+    }
+
+    async Task FinancialSummaryAsync(Order order)
+    {
+        if (Transmission == null)
+        {
+            return;
+        }
+
+        await foreach (var code in Transmission.GetStockAsync(order))
+        {
+            if (string.IsNullOrEmpty(code))
+            {
+                continue;
+            }
+            foreach (var fs in await FinancialSummary.ExecuteAsync(code))
+            {
+                fs.Code = code;
+                fs.Date = fs.ReceiveDate?[..7].Replace('.', '-');
+                fs.Estimated = fs.ReceiveDate?[^2] == 'E';
+
+                _ = await Transmission.ExecutePostAsync(fs);
+            }
+        }
+        await Transmission.EstimatedStockAsync();
     }
 
     async Task ReactTheScenarioAsync()
@@ -266,6 +298,9 @@ partial class InquiryByStockTheme : Form
                     theme.TerminateTheProcess();
                     return;
                 }
+#if DEBUG
+                await FinancialSummaryAsync(Order.MarketCap);
+#endif
             });
             FormBorderStyle = FormBorderStyle.None;
             WindowState = FormWindowState.Minimized;
